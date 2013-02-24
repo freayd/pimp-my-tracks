@@ -1,2 +1,49 @@
-*.swp
+# https://help.github.com/articles/ignoring-files
+
+# Windows #
+###########
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# OSX #
+#######
 .DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+
+# Linux #
+#########
+.*
+!.gitignore
+*~
+
+# Vim #
+#######
+.*.s[a-w][a-z]
+*.un~
+Session.vim
+.netrwhist
+*~
+
+# Emacs #
+#########
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+.elc
+auto-save-list
+tramp
+.\#*
+
+# TextMate #
+############
+*.tmproj
+*.tmproject
+tmtags
