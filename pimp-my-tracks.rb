@@ -15,6 +15,22 @@
 ##########################################################################
 
 require 'lib.rb'
+### Parse parameters ###
+options = OpenStruct.new
+options.verbose = false
+OptionParser.new do |opt|
+    opt.banner = "Usage: ruby #{__FILE__} [options]"
+    opt.separator 'Options'
+
+    opt.on('-h', '--help', 'Print this message and exit') do
+        puts opt
+        exit
+    end
+
+    opt.on('-v', '--[no-]verbose', 'Run verbosely') do |v|
+        options.verbose = v
+    end
+end.parse!
 
 ### Search GPSBabel command ###
 gpsbabel_command = which('gpsbabel')
@@ -30,6 +46,8 @@ if gpsbabel_command.nil?
     puts 'GPSBabel could not be found on your computer. May be you should install it and add the GPSBabel folder in the environment variable PATH?'
     exit
 end
+gpsbabel_command = "'#{gpsbabel_command}'" if gpsbabel_command.match(/ /)
+puts "GPSBabel command: #{gpsbabel_command}" if options.verbose
 
 ### Parameters ###
 input_type  = 'gpx'
@@ -38,7 +56,7 @@ output_type = 'kml'
 output_file = 'tracks/pimped.kml'
 
 ### GPSBabel Arguments - Input files ###
-args = [ "'#{gpsbabel_command}'" ]
+args = [ gpsbabel_command ]
 Dir.glob(input_file) do |filepath|
     args << "-i #{input_type} -f '#{filepath}'" unless filepath == output_file
 end
@@ -64,13 +82,13 @@ args << '-x position,distance=50m,time=43200'
 args << "-o #{output_type} -F '#{output_file}'"
 
 ### Run GPSBabel ###
-puts   args.join(' ').gsub(/ -([a-eg-zA-EG-Z]) /, "\n    -\\1 ")
+puts   args.join("\n    ") if options.verbose
 system args.join(' ')
 exit unless $?.success?
 
 ### Open result file ###
-puts   "'#{OS::OPEN_COMMAND}' '#{output_file}'"
-system "'#{OS::OPEN_COMMAND}' '#{output_file}'"
+puts   "#{OS::OPEN_COMMAND} '#{output_file}'" if options.verbose
+system "#{OS::OPEN_COMMAND} '#{output_file}'"
 
 # TODO Grab the profile from http://www.gpsvisualizer.com/profile_input
 # http://code.jquery.com/jquery-1.9.1.min.js
