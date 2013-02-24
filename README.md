@@ -1,4 +1,8 @@
+Pimp my Tracks
+==============
+
 Customize your GPS tracks : merge, simplify and more...
+[Pimp my Tracks on GitHub](https://github.com/freayd/pimp-my-tracks)
 
 Features
 ========
@@ -13,3 +17,8 @@ Requirements
 
 * [GPSBabel](http://www.gpsbabel.org/)
 * Web access to [GPS Visualizer](http://www.gpsvisualizer.com/)
+
+License
+=======
+
+Pimp my Tracks is licensed under the [GPL](http://www.gnu.org/licenses/gpl.txt)
