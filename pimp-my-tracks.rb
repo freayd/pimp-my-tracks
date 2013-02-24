@@ -36,8 +36,6 @@ input_type  = 'gpx'
 input_file  = 'tracks/*.gpx'
 output_type = 'kml'
 output_file = 'tracks/pimped.kml'
-input_file  = '/Users/fred/Google Drive/Travel/GPS/Final/Khovsgol/*.gpx'
-output_file = '/Users/fred/Google Drive/Travel/GPS/Final/Khovsgol/Khovsgol.kml'
 
 ### GPSBabel Arguments - Input files ###
 args = [ "'#{gpsbabel_command}'" ]
