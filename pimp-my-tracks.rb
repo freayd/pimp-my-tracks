@@ -1,3 +1,4 @@
+#!/usr/bin/env ruby
 ##########################################################################
 # Pimp my Tracks is free software: you can redistribute it and/or modify #
 # it under the terms of the GNU General Public License as published by   #
@@ -13,21 +14,39 @@
 # along with Pimp my Tracks. If not, see <http://www.gnu.org/licenses/>. #
 ##########################################################################
 
+require 'lib.rb'
+
+### Search GPSBabel command ###
+gpsbabel_command = which('gpsbabel')
+if gpsbabel_command.nil?
+    gpsbabel_command = case OS::TYPE
+        when 'windows' then 'C:\Program Files\GPSBabel\gpsbabel.exe'
+        when 'mac'     then '/Applications/GPSBabelFE.app/Contents/MacOS/gpsbabel'
+        when 'linux'   then '/usr/bin/gpsbabel'
+    end
+end
+gpsbabel_command = nil unless not gpsbabel_command.nil? and File.executable?(gpsbabel_command)
+if gpsbabel_command.nil?
+    puts 'GPSBabel could not be found on your computer. May be you should install it and add the GPSBabel folder in the environment variable PATH?'
+    exit
+end
+
 ### Parameters ###
-gpsbabel_command = '/Applications/GPSBabelFE.app/Contents/MacOS/gpsbabel'
 input_type  = 'gpx'
 input_file  = 'tracks/*.gpx'
 output_type = 'kml'
 output_file = 'tracks/pimped.kml'
+input_file  = '/Users/fred/Google Drive/Travel/GPS/Final/Khovsgol/*.gpx'
+output_file = '/Users/fred/Google Drive/Travel/GPS/Final/Khovsgol/Khovsgol.kml'
 
-### Arguments - Input files ###
+### GPSBabel Arguments - Input files ###
 args = [ "'#{gpsbabel_command}'" ]
 Dir.glob(input_file) do |filepath|
     args << "-i #{input_type} -f '#{filepath}'" unless filepath == output_file
 end
 args << '-x track,pack'
 
-### Arguments - Filters ###
+### GPSBabel Arguments - Filters ###
 # Connect segments.
 # NOTE: File names must be alphabetically ordered by date.
 args << '-x track,trk2seg'
@@ -40,10 +59,10 @@ args << '-x simplify,error=0.001k,crosstrack'
 #       3) Process the problematic area (with filter '-x polygon,file=FILENAME') in a second temporary file with filter '-x position,distance=50m,time=60'
 #       4) Merge the two temporary files with filter '-x track,pack'
 args << '-x position,distance=50m,time=43200'
-# Time-shifting
+# TODO Time-shifting
 # args << '-x track,move=+1h'
 
-### Arguments - Output file ###
+### GPSBabel Arguments - Output file ###
 args << "-o #{output_type} -F '#{output_file}'"
 
 ### Run GPSBabel ###
@@ -52,14 +71,8 @@ system args.join(' ')
 exit unless $?.success?
 
 ### Open result file ###
-open_command = case RUBY_PLATFORM
-    when /cygwin|mswin|mingw|bccwin|wince|emx/i then 'start'      # Windows
-    when /darwin/i                              then 'open'       # Mac OS
-    when /linux/i                               then 'gnome-open' # Linux
-    else '# Open the file'
-end
-puts   "'#{open_command}' '#{output_file}'"
-system "'#{open_command}' '#{output_file}'"
+puts   "'#{OS::OPEN_COMMAND}' '#{output_file}'"
+system "'#{OS::OPEN_COMMAND}' '#{output_file}'"
 
 # TODO Grab the profile from http://www.gpsvisualizer.com/profile_input
 # http://code.jquery.com/jquery-1.9.1.min.js
