@@ -7,3 +7,6 @@
 [submodule "lib/rest-client"]
 	path = lib/rest-client
 	url = git://github.com/archiloque/rest-client.git
+[submodule "lib/netrc"]
+	path = lib/netrc
+	url = git://github.com/geemus/netrc.git
