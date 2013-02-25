@@ -27,12 +27,27 @@ require 'ostruct'
 
 ### Parse parameters ###
 options = OpenStruct.new
+options.connect      = true
+options.remove_close = true
+options.simplify     = true
 options.verbose = false
 option_parser = OptionParser.new do |opt|
     opt.banner = "Usage: ruby #{__FILE__} [options] directory"
     opt.separator 'Directory'
     opt.separator '    Path to the directory which contains your GPS files to pimp'
     opt.separator 'Options'
+
+    opt.on('-c', '--[no-]connect', 'Connect segments (filenames determine the order)') do |c|
+        options.connect = c
+    end
+
+    opt.on('-r', '--[no-]remove-close', 'Remove close points (usefull when lot of very close points are recorded during breaks)') do |r|
+        options.remove_close = r
+    end
+
+    opt.on('-s', '--[no-]simplify', 'Simplify the track (remove points that have the smallest effect on the overall shape)') do |s|
+        options.simplify = s
+    end
 
     opt.on('-h', '--help', 'Print this message and exit') do
         puts opt
@@ -84,18 +99,17 @@ end
 gpsbabel_args << '-x track,pack'
 
 ### GPSBabel Arguments - Filters ###
-# Connect segments.
-# NOTE: File names must be alphabetically ordered by date.
-gpsbabel_args << '-x track,trk2seg'
-# Simplify the track.
-gpsbabel_args << '-x simplify,error=0.001k,crosstrack'
-# Remove close points (usefull when lot of very close points are recorded during breaks).
+# Connect segments
+gpsbabel_args << '-x track,trk2seg' if options.connect
+# Simplify the track
+gpsbabel_args << '-x simplify,error=0.01k,crosstrack' if options.simplify
+# Remove close points
 # NOTE: If a U-turn is done in less than 12 hours (43200 seconds), points of the return way may be deleted. A solution could be :
 #       1) Specify in a parameter file the coordinates of the polygon containing the problematic area (recorded many times)
 #       2) Process everything but the problematic area (with filter '-x polygon,file=F,exclude') in a first temporary file with filter '-x position,distance=50m'
 #       3) Process the problematic area (with filter '-x polygon,file=FILENAME') in a second temporary file with filter '-x position,distance=50m,time=60'
 #       4) Merge the two temporary files with filter '-x track,pack'
-gpsbabel_args << '-x position,distance=50m,time=43200'
+gpsbabel_args << '-x position,distance=50m,time=43200' if options.remove_close
 # TODO Time-shifting
 # gpsbabel_args << '-x track,move=+1h'
 
