@@ -15,7 +15,7 @@ Features
 Requirements
 ============
 
-* [Ruby](http://www.ruby-lang.org/)
+* [Ruby](http://www.ruby-lang.org/) and [Bundler gem](http://gembundler.com/)
 * [GPSBabel](http://www.gpsbabel.org/)
 * Web access to [GPS Visualizer](http://www.gpsvisualizer.com/)
 
