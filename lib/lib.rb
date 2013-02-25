@@ -16,13 +16,9 @@
 ##########################################################################
 
 # Add 3rd party libraries to the load path
-Dir.foreach(File.dirname(__FILE__)) do |lib|
-    next if lib.start_with?('.')
-    main_lib_path = File.expand_path(File.join(File.dirname(__FILE__), lib))
-    next unless File.directory?(main_lib_path)
-    lib_lib_path = File.join(main_lib_path, 'lib')
-
-    $LOAD_PATH.unshift(lib_lib_path) if File.directory?(lib_lib_path)
+Dir.glob(File.join(File.dirname(__FILE__), '*', 'lib')) do |lib|
+    lib = File.expand_path(lib)
+    $LOAD_PATH.unshift(lib) if File.directory?(lib)
 end
 
 require 'open4'
