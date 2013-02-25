@@ -30,7 +30,8 @@ options = OpenStruct.new
 options.connect      = true
 options.remove_close = true
 options.simplify     = true
-options.verbose = false
+options.open         = false
+options.verbose      = false
 option_parser = OptionParser.new do |opt|
     opt.banner = "Usage: ruby #{__FILE__} [options] directory"
     opt.separator 'Directory'
@@ -47,6 +48,10 @@ option_parser = OptionParser.new do |opt|
 
     opt.on('-s', '--[no-]simplify', 'Simplify the track (remove points that have the smallest effect on the overall shape)') do |s|
         options.simplify = s
+    end
+
+    opt.on('-o', '--[no-]open', 'Open the pimped file with default application') do |o|
+        options.open = o
     end
 
     opt.on('-h', '--help', 'Print this message and exit') do
@@ -120,7 +125,7 @@ gpsbabel_args << "-o #{output_type} -F '#{output_file}'"
 run_command('Call GPSBabel', gpsbabel_args, options.verbose)
 
 ### Open result file ###
-run_command('Open file', "#{OS::OPEN_COMMAND} '#{output_file}'", options.verbose)
+run_command('Open file', "#{OS::OPEN_COMMAND} '#{output_file}'", options.verbose) if options.open
 
 # TODO Grab the profile from http://www.gpsvisualizer.com/profile_input
 # http://code.jquery.com/jquery-1.9.1.min.js
