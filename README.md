@@ -19,6 +19,16 @@ Requirements
 * [GPSBabel](http://www.gpsbabel.org/)
 * Web access to [GPS Visualizer](http://www.gpsvisualizer.com/)
 
+Usage
+=====
+
+    ruby pimp-my-tracks.rb [options] directory
+    Directory
+        Path to the directory which contains your GPS files to pimp
+    Options
+        -h, --help                       Print this message and exit
+        -v, --[no-]verbose               Run verbosely
+
 License
 =======
 

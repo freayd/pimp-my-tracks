@@ -28,8 +28,10 @@ require 'ostruct'
 ### Parse parameters ###
 options = OpenStruct.new
 options.verbose = false
-OptionParser.new do |opt|
-    opt.banner = "Usage: ruby #{__FILE__} [options]"
+option_parser = OptionParser.new do |opt|
+    opt.banner = "Usage: ruby #{__FILE__} [options] directory"
+    opt.separator 'Directory'
+    opt.separator '    Path to the directory which contains your GPS files to pimp'
     opt.separator 'Options'
 
     opt.on('-h', '--help', 'Print this message and exit') do
@@ -40,7 +42,17 @@ OptionParser.new do |opt|
     opt.on('-v', '--[no-]verbose', 'Run verbosely') do |v|
         options.verbose = v
     end
-end.parse!
+end
+option_parser.parse!
+if ARGV.length != 1
+    puts option_parser
+    exit
+end
+input_directory = ARGV[0]
+unless File.directory?(input_directory)
+    puts "'#{directory}' isn't a directory !"
+    exit
+end
 
 ### Search GPSBabel command ###
 gpsbabel_command = which('gpsbabel')
@@ -60,9 +72,9 @@ gpsbabel_command = "'#{gpsbabel_command}'" if gpsbabel_command.match(/ /)
 
 ### Parameters ###
 input_type  = 'gpx'
-input_file  = 'tracks/*.gpx'
+input_file  = File.join(input_directory, '*.gpx')
 output_type = 'kml'
-output_file = 'tracks/pimped.kml'
+output_file = File.join(input_directory, File.basename(input_directory) + '.kml')
 
 ### GPSBabel Arguments - Input files ###
 gpsbabel_args = [ gpsbabel_command ]
