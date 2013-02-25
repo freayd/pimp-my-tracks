@@ -1,0 +1,3 @@
+[submodule "lib/open4"]
+	path = lib/open4
+	url = git://github.com/ahoward/open4.git
