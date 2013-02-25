@@ -1,3 +1,9 @@
 [submodule "lib/open4"]
 	path = lib/open4
 	url = git://github.com/ahoward/open4.git
+[submodule "lib/mime-types"]
+	path = lib/mime-types
+	url = git://github.com/halostatue/mime-types.git
+[submodule "lib/rest-client"]
+	path = lib/rest-client
+	url = git://github.com/archiloque/rest-client.git
