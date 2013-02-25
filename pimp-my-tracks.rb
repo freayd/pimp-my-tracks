@@ -14,7 +14,9 @@
 # along with Pimp my Tracks. If not, see <http://www.gnu.org/licenses/>. #
 ##########################################################################
 
-require File.join(File.dirname(__FILE__), 'lib', 'lib.rb')
+require File.join(File.dirname(__FILE__), 'lib.rb')
+require 'rubygems'
+require 'bundler/setup'
 require 'optparse'
 require 'ostruct'
 

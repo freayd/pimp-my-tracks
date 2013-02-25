@@ -15,16 +15,10 @@
 # along with Pimp my Tracks. If not, see <http://www.gnu.org/licenses/>. #
 ##########################################################################
 
-# Add 3rd party libraries to the load path
-Dir.glob(File.join(File.dirname(__FILE__), '*', 'lib')) do |lib|
-    lib = File.expand_path(lib)
-    $LOAD_PATH.unshift(lib) if File.directory?(lib)
-end
-
-require 'open4'
-
 # Run a command then print output/errors to the console and exit in case of failure
 def run_command(name, args, verbose)
+    require 'open4'
+
     header = "#{name}:"
     command = "    Command:\n        " + args.to_a.join("\n        ")
     out, err = nil, nil
