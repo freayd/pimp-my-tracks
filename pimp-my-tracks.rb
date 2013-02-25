@@ -21,7 +21,7 @@ unless Kernel.respond_to?(:require_relative)
         end
     end
 end
-require_relative 'lib.rb'
+require_relative 'lib/lib.rb'
 require 'optparse'
 require 'ostruct'
 
