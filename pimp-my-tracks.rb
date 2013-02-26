@@ -23,7 +23,7 @@ require 'ostruct'
 require 'rest-client'
 
 # Parse parameters
-options = OpenStruct.new(:connect      => true,
+PimpMyTracks.options = options = OpenStruct.new(:connect      => true,
                          :remove_close => true,
                          :simplify     => true,
                          :open         => false,
@@ -114,7 +114,9 @@ exit unless options.profile
 
 # GPS Visualizer - Fetch form parameters
 gpsvisualizer_url = 'http://www.gpsvisualizer.com/profile_input'
-puts "Load GPS Visualizer form:\n    Method:\n        GET\n    URL:\n        #{gpsvisualizer_url}" if options.verbose
+print_process('Load GPS Visualizer form',
+              '1. Method' => 'GET',
+              '2. URL'    => gpsvisualizer_url)
 gpsvisualizer_form = Nokogiri::HTML(RestClient.get(gpsvisualizer_url)).at_css('form[action="profile?output"]')
 abort "GPS Visualizer form not found on page '#{gpsvisualizer_url}'. May the site has changed ?" if gpsvisualizer_form.nil?
 gpsvisualizer_params = {}
@@ -137,14 +139,10 @@ gpsvisualizer_params.merge!(:format          => 'svg',
 
 # GPS Visualizer - Send profile request
 gpsvisualizer_url = 'http://www.gpsvisualizer.com/profile?output'
-if options.verbose
-    puts "Send GPS Visualizer profile request:\n    Method:\n        POST\n    URL:\n        #{gpsvisualizer_url}\n    Parameters:"
-    gpsvisualizer_params.keys.sort_by { |sym| sym.to_s }.each do |name|
-        value = gpsvisualizer_params[name]
-        value = value.is_a?(File) ? "File('#{value.path}')" : "'#{value}'"
-        puts "        #{name}: #{value}"
-    end
-end
+print_process('Send GPS Visualizer profile request',
+              '1. Method'     => 'POST',
+              '2. URL'        => gpsvisualizer_url,
+              '3. Parameters' => gpsvisualizer_params)
 gpsvisualizer_result = Nokogiri::HTML(RestClient.post(gpsvisualizer_url, gpsvisualizer_params))
 gpsvisualizer_error = gpsvisualizer_result.at_css('[class="error"]')
 abort "GPS Visualizer error: '#{gpsvisualizer_error.content}'." unless gpsvisualizer_error.nil?
@@ -154,6 +152,9 @@ abort "GPS Visualizer image not found on page '#{gpsvisualizer_url}'. May the si
 # GPS Visualizer - Download the resulting image
 gpsvisualizer_url = "http://www.gpsvisualizer.com/#{gpsvisualizer_svg_path}"
 profile_file = File.join(directory_path, directory_name + '.svg')
-puts "Download GPS Visualizer profile image:\n    Method:\n        GET\n    URL:\n        #{gpsvisualizer_url}\n    Local file:\n        #{profile_file}" if options.verbose
+print_process('Download GPS Visualizer profile image',
+              '1. Method'     => 'GET',
+              '2. URL'        => gpsvisualizer_url,
+              '3. Local file' => profile_file)
 File.open(profile_file, 'w') { |f| f.write(RestClient.get(gpsvisualizer_url)) }
 run_command('Open profile file', "#{OS::OPEN_COMMAND} '#{profile_file}'", options.verbose) if options.open
