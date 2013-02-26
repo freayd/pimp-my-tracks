@@ -30,6 +30,7 @@ Usage
         -r, --[no-]remove-close          Remove close points (usefull when lot of very close points are recorded during breaks)
         -s, --[no-]simplify              Simplify the track (remove points that have the smallest effect on the overall shape)
         -o, --[no-]open                  Open the pimped file with default application
+        -p, --[no-]profile               Draw a profile
         -h, --help                       Print this message and exit
         -v, --[no-]verbose               Run verbosely
 

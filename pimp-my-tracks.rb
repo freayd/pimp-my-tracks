@@ -17,8 +17,10 @@
 require File.join(File.dirname(__FILE__), 'lib.rb')
 require 'rubygems'
 require 'bundler/setup'
+require 'nokogiri'
 require 'optparse'
 require 'ostruct'
+require 'rest-client'
 
 ### Parse parameters ###
 options = OpenStruct.new
@@ -26,6 +28,7 @@ options.connect      = true
 options.remove_close = true
 options.simplify     = true
 options.open         = false
+options.profile      = false
 options.verbose      = false
 option_parser = OptionParser.new do |opt|
     opt.banner = "Usage: ruby #{__FILE__} [options] directory"
@@ -47,6 +50,10 @@ option_parser = OptionParser.new do |opt|
 
     opt.on('-o', '--[no-]open', 'Open the pimped file with default application') do |o|
         options.open = o
+    end
+
+    opt.on('-p', '--[no-]profile', 'Draw a profile') do |p|
+        options.profile = p
     end
 
     opt.on('-h', '--help', 'Print this message and exit') do
@@ -113,7 +120,50 @@ run_command('Call GPSBabel', gpsbabel_args, options.verbose)
 ### Open result file ###
 run_command('Open file', "#{OS::OPEN_COMMAND} '#{output_file}'", options.verbose) if options.open
 
-# TODO Grab the profile from http://www.gpsvisualizer.com/profile_input
-# http://code.jquery.com/jquery-1.9.1.min.js
-# jQuery('form input').each(function(){console.log( '#' + this.type + ' : ' + this.name + ' = ' + this.value );})
-# http://www.krio.me/how-to-send-post-request-return-contents-ruby/
+exit unless options.profile
+
+### GPS Visualizer - Fetch form parameters ###
+gpsvisualizer_url = 'http://www.gpsvisualizer.com/profile_input'
+puts "Load GPS Visualizer form:\n    Method:\n        GET\n    URL:\n        #{gpsvisualizer_url}" if options.verbose
+gpsvisualizer_form = Nokogiri::HTML(RestClient.get(gpsvisualizer_url)).at_css('form[action="profile?output"]')
+abort "GPS Visualizer form not found on page '#{gpsvisualizer_url}'. May the site has changed ?" if gpsvisualizer_form.nil?
+gpsvisualizer_params = {}
+gpsvisualizer_form.css('input').each do |input|
+    next if ['file', 'reset'].include?(input['type'])
+    next if input['name'].nil? or input['value'].nil?
+    gpsvisualizer_params[input['name']] = input['value']
+end
+gpsvisualizer_form.css('select').each do |select|
+    option = nil
+    option = select.at_css('option[selected="selected"]') ||
+             select.at_css('option[selected]') ||
+             select.at_css('option')
+    next if option.nil? or option['value'].nil?
+    gpsvisualizer_params[select['name']] = option['value']
+end
+gpsvisualizer_params.merge!({ 'format'          => 'svg',
+                              'add_elevation'   => 'auto',
+                              'drawing_mode'    => 'paths',
+                              'uploaded_file_1' => File.new(output_file) })
+
+### GPS Visualizer - Send profile request ###
+gpsvisualizer_url = 'http://www.gpsvisualizer.com/profile?output'
+if options.verbose
+    puts "Send GPS Visualizer profile request:\n    Method:\n        POST\n    URL:\n        #{gpsvisualizer_url}\n    Parameters:"
+    gpsvisualizer_params.keys.sort.each do |name|
+        value = gpsvisualizer_params[name]
+        value = value.is_a?(File) ? "File('#{value.path}')" : "'#{value}'"
+        puts "        #{name}: #{value}"
+    end
+end
+gpsvisualizer_result = Nokogiri::HTML(RestClient.post(gpsvisualizer_url, gpsvisualizer_params))
+gpsvisualizer_error = gpsvisualizer_result.at_css('[class="error"]')
+abort "GPS Visualizer error: '#{gpsvisualizer_error.content}'." unless gpsvisualizer_error.nil?
+gpsvisualizer_svg_path = (gpsvisualizer_result.at_css('a[href^="download/"]') || {})['href']
+abort "GPS Visualizer image not found on page '#{gpsvisualizer_url}'. May the site has changed ?" if gpsvisualizer_svg_path.nil?
+
+### GPS Visualizer - Download the resulting image ###
+gpsvisualizer_url = "http://www.gpsvisualizer.com/#{gpsvisualizer_svg_path}"
+profile_file = File.join(input_directory, File.basename(input_directory) + '.svg')
+puts "Download GPS Visualizer profile image:\n    Method:\n        GET\n    URL:\n        #{gpsvisualizer_url}\n    Local file:\n        #{profile_file}" if options.verbose
+File.open(profile_file, 'w') {|f| f.write(RestClient.get(gpsvisualizer_url)) }
