@@ -133,28 +133,64 @@ gpsvisualizer_form.css('select').each do |select|
     gpsvisualizer_params[select['name'].to_sym] = option['value']
 end
 gpsvisualizer_params.merge!(:format          => 'svg',
+                            :units           => 'metric',
+                            :drawing_title   => directory_name,
                             :add_elevation   => 'auto',
                             :drawing_mode    => 'paths',
                             :uploaded_file_1 => File.new(kml_file))
 
-# GPS Visualizer - Send profile request
-gpsvisualizer_url = 'http://www.gpsvisualizer.com/profile?output'
-print_process('Send GPS Visualizer profile request',
-              '1. Method'     => 'POST',
-              '2. URL'        => gpsvisualizer_url,
-              '3. Parameters' => gpsvisualizer_params)
-gpsvisualizer_result = Nokogiri::HTML(RestClient.post(gpsvisualizer_url, gpsvisualizer_params))
-gpsvisualizer_error = gpsvisualizer_result.at_css('[class="error"]')
-abort "GPS Visualizer error: '#{gpsvisualizer_error.content}'." unless gpsvisualizer_error.nil?
-gpsvisualizer_svg_path = (gpsvisualizer_result.at_css('a[href^="download/"]') || {})['href']
-abort "GPS Visualizer image not found on page '#{gpsvisualizer_url}'. May the site has changed ?" if gpsvisualizer_svg_path.nil?
+# Download the profile image 2 times :
+#     1) First download
+#     2) Search min and max altitudes of the profile
+#     3) If found, new download with more comprehensive elevation bounds (ex: [1600, 2500] instead of [1642, 2456]). Stop if not found.
+altitude_min = +1.0/0.0
+altitude_max = -1.0/0.0
+2.times do |iteration|
 
-# GPS Visualizer - Download the resulting image
-gpsvisualizer_url = "http://www.gpsvisualizer.com/#{gpsvisualizer_svg_path}"
-profile_file = File.join(directory_path, directory_name + '.svg')
-print_process('Download GPS Visualizer profile image',
-              '1. Method'     => 'GET',
-              '2. URL'        => gpsvisualizer_url,
-              '3. Local file' => profile_file)
-File.open(profile_file, 'w') { |f| f.write(RestClient.get(gpsvisualizer_url)) }
+    # GPS Visualizer - Send profile request
+    gpsvisualizer_url = 'http://www.gpsvisualizer.com/profile?output'
+    print_process('Send GPS Visualizer profile request',
+                  '1. Method'     => 'POST',
+                  '2. URL'        => gpsvisualizer_url,
+                  '3. Parameters' => gpsvisualizer_params)
+    gpsvisualizer_result = Nokogiri::HTML(RestClient.post(gpsvisualizer_url, gpsvisualizer_params))
+    gpsvisualizer_error = gpsvisualizer_result.at_css('[class="error"]')
+    abort "GPS Visualizer error: '#{gpsvisualizer_error.content}'." unless gpsvisualizer_error.nil?
+    gpsvisualizer_svg_path = (gpsvisualizer_result.at_css('a[href^="download/"]') || {})['href']
+    abort "GPS Visualizer image not found on page '#{gpsvisualizer_url}'. May the site has changed ?" if gpsvisualizer_svg_path.nil?
+
+    # GPS Visualizer - Download the resulting image
+    gpsvisualizer_url = "http://www.gpsvisualizer.com/#{gpsvisualizer_svg_path}"
+    profile_file = File.join(directory_path, directory_name + '.svg')
+    print_process('Download GPS Visualizer profile image',
+                  '1. Method'     => 'GET',
+                  '2. URL'        => gpsvisualizer_url,
+                  '3. Local file' => profile_file)
+    File.open(profile_file, 'w') { |f| f.write(RestClient.get(gpsvisualizer_url)) }
+
+    # Search min and max altitudes
+    if iteration == 0
+
+        svg_content = Nokogiri::XML(File.open(profile_file).read)
+        (svg_content.css('g[id="altitude y gridlines"] text') || []).each do |text|
+            m = text.content.match(/^\s*(\d+[\.,]?\d*)\s*m\s*$/)
+            next if m.nil?
+            altitude = m[1].to_f
+            altitude_min = [altitude_min, altitude].min
+            altitude_max = [altitude_max, altitude].max
+        end
+        altitude_min = nil if altitude_min == +1.0/0.0
+        altitude_max = nil if altitude_max == -1.0/0.0
+        print_process('Read profile altitudes',
+                      '1. Minimum' => altitude_min.nil? ? 'not found' : "#{altitude_min.to_i} m",
+                      '2. Maximum'  => altitude_max.nil? ? 'not found' : "#{altitude_max.to_i} m")
+
+        break if altitude_min.nil? and altitude_max.nil?
+
+        gpsvisualizer_params.merge!(:profile_y_min => altitude_min.nil? ? '' : ((altitude_min / 100    ).to_i * 100).to_s,
+                                    :profile_y_max => altitude_max.nil? ? '' : ((altitude_max / 100 + 1).to_i * 100).to_s,
+                                    :uploaded_file_1 => File.new(kml_file))
+    end
+
+end
 run_command('Open profile file', "#{OS::OPEN_COMMAND} '#{profile_file}'", options.verbose) if options.open
