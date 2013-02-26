@@ -52,7 +52,7 @@ def which(cmd)
             return cmd if File.executable?(cmd)
         end
     end
-    return nil
+    nil
 end
 
 # Some OS tools

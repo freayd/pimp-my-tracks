@@ -22,14 +22,13 @@ require 'optparse'
 require 'ostruct'
 require 'rest-client'
 
-### Parse parameters ###
-options = OpenStruct.new
-options.connect      = true
-options.remove_close = true
-options.simplify     = true
-options.open         = false
-options.profile      = false
-options.verbose      = false
+# Parse parameters
+options = OpenStruct.new(:connect      => true,
+                         :remove_close => true,
+                         :simplify     => true,
+                         :open         => false,
+                         :profile      => false,
+                         :verbose      => false)
 option_parser = OptionParser.new do |opt|
     opt.banner = "Usage: ruby #{__FILE__} [options] directory"
     opt.separator 'Directory'
@@ -67,10 +66,12 @@ option_parser = OptionParser.new do |opt|
 end
 option_parser.parse!
 abort option_parser.to_s if ARGV.length != 1
-input_directory = ARGV[0]
-abort "'#{input_directory}' isn't a directory !" unless File.directory?(input_directory)
+directory_path = ARGV[0]
+abort "'#{directory_path}' isn't a directory !" unless File.directory?(directory_path)
+directory_name = File.basename(directory_path)
+kml_file = File.join(directory_path, directory_name + '.kml')
 
-### Search GPSBabel command ###
+# Search GPSBabel command
 gpsbabel_command = which('gpsbabel')
 if gpsbabel_command.nil?
     gpsbabel_command = case OS::TYPE
@@ -83,46 +84,35 @@ gpsbabel_command = nil unless not gpsbabel_command.nil? and File.executable?(gps
 abort 'GPSBabel could not be found on your computer. May be you should install it and add the GPSBabel folder in the environment variable PATH?' if gpsbabel_command.nil?
 gpsbabel_command = "'#{gpsbabel_command}'" if gpsbabel_command.match(/ /)
 
-### Parameters ###
-input_type  = 'gpx'
-input_file  = File.join(input_directory, '*.gpx')
-output_type = 'kml'
-output_file = File.join(input_directory, File.basename(input_directory) + '.kml')
-
-### GPSBabel Arguments - Input files ###
+# GPSBabel Arguments - Input files
+# TODO Add --format and --list-formats option (fetch formats (name, extension) from "gpsbabel -h")
 gpsbabel_args = [ gpsbabel_command ]
-Dir.glob(input_file) do |filepath|
-    gpsbabel_args << "-i #{input_type} -f '#{filepath}'" unless filepath == output_file
+Dir.glob(File.join(directory_path, '*.gpx')) do |filepath|
+    gpsbabel_args << "-i 'gpx' -f '#{filepath}'" unless filepath == kml_file
 end
 gpsbabel_args << '-x track,pack'
 
-### GPSBabel Arguments - Filters ###
-# Connect segments
+# GPSBabel Arguments - Filters
 gpsbabel_args << '-x track,trk2seg' if options.connect
-# Simplify the track
 gpsbabel_args << '-x simplify,error=0.01k,crosstrack' if options.simplify
-# Remove close points
-# NOTE: If a U-turn is done in less than 12 hours (43200 seconds), points of the return way may be deleted. A solution could be :
-#       1) Specify in a parameter file the coordinates of the polygon containing the problematic area (recorded many times)
-#       2) Process everything but the problematic area (with filter '-x polygon,file=F,exclude') in a first temporary file with filter '-x position,distance=50m'
-#       3) Process the problematic area (with filter '-x polygon,file=FILENAME') in a second temporary file with filter '-x position,distance=50m,time=60'
-#       4) Merge the two temporary files with filter '-x track,pack'
+# WARNING - Remove close points
+# If a U-turn is done in less than 12 hours (43200 seconds), points of the return way may be deleted. A solution could be :
+#     1) Specify in a parameter file the coordinates of the polygon containing the problematic area (recorded many times)
+#     2) Process everything but the problematic area (with filter '-x polygon,file=F,exclude') in a first temporary file with filter '-x position,distance=50m'
+#     3) Process the problematic area (with filter '-x polygon,file=FILENAME') in a second temporary file with filter '-x position,distance=50m,time=60'
+#     4) Merge the two temporary files with filter '-x track,pack'
 gpsbabel_args << '-x position,distance=50m,time=43200' if options.remove_close
-# TODO Time-shifting
-# gpsbabel_args << '-x track,move=+1h'
 
-### GPSBabel Arguments - Output file ###
-gpsbabel_args << "-o #{output_type} -F '#{output_file}'"
+# GPSBabel Arguments - Output file
+gpsbabel_args << "-o 'kml' -F '#{kml_file}'"
 
-### Run GPSBabel ###
+# Run GPSBabel
 run_command('Call GPSBabel', gpsbabel_args, options.verbose)
-
-### Open result file ###
-run_command('Open file', "#{OS::OPEN_COMMAND} '#{output_file}'", options.verbose) if options.open
+run_command('Open KML file', "#{OS::OPEN_COMMAND} '#{kml_file}'", options.verbose) if options.open
 
 exit unless options.profile
 
-### GPS Visualizer - Fetch form parameters ###
+# GPS Visualizer - Fetch form parameters
 gpsvisualizer_url = 'http://www.gpsvisualizer.com/profile_input'
 puts "Load GPS Visualizer form:\n    Method:\n        GET\n    URL:\n        #{gpsvisualizer_url}" if options.verbose
 gpsvisualizer_form = Nokogiri::HTML(RestClient.get(gpsvisualizer_url)).at_css('form[action="profile?output"]')
@@ -131,26 +121,25 @@ gpsvisualizer_params = {}
 gpsvisualizer_form.css('input').each do |input|
     next if ['file', 'reset'].include?(input['type'])
     next if input['name'].nil? or input['value'].nil?
-    gpsvisualizer_params[input['name']] = input['value']
+    gpsvisualizer_params[input['name'].to_sym] = input['value']
 end
 gpsvisualizer_form.css('select').each do |select|
-    option = nil
     option = select.at_css('option[selected="selected"]') ||
              select.at_css('option[selected]') ||
              select.at_css('option')
     next if option.nil? or option['value'].nil?
-    gpsvisualizer_params[select['name']] = option['value']
+    gpsvisualizer_params[select['name'].to_sym] = option['value']
 end
-gpsvisualizer_params.merge!({ 'format'          => 'svg',
-                              'add_elevation'   => 'auto',
-                              'drawing_mode'    => 'paths',
-                              'uploaded_file_1' => File.new(output_file) })
+gpsvisualizer_params.merge!(:format          => 'svg',
+                            :add_elevation   => 'auto',
+                            :drawing_mode    => 'paths',
+                            :uploaded_file_1 => File.new(kml_file))
 
-### GPS Visualizer - Send profile request ###
+# GPS Visualizer - Send profile request
 gpsvisualizer_url = 'http://www.gpsvisualizer.com/profile?output'
 if options.verbose
     puts "Send GPS Visualizer profile request:\n    Method:\n        POST\n    URL:\n        #{gpsvisualizer_url}\n    Parameters:"
-    gpsvisualizer_params.keys.sort.each do |name|
+    gpsvisualizer_params.keys.sort_by { |sym| sym.to_s }.each do |name|
         value = gpsvisualizer_params[name]
         value = value.is_a?(File) ? "File('#{value.path}')" : "'#{value}'"
         puts "        #{name}: #{value}"
@@ -162,8 +151,9 @@ abort "GPS Visualizer error: '#{gpsvisualizer_error.content}'." unless gpsvisual
 gpsvisualizer_svg_path = (gpsvisualizer_result.at_css('a[href^="download/"]') || {})['href']
 abort "GPS Visualizer image not found on page '#{gpsvisualizer_url}'. May the site has changed ?" if gpsvisualizer_svg_path.nil?
 
-### GPS Visualizer - Download the resulting image ###
+# GPS Visualizer - Download the resulting image
 gpsvisualizer_url = "http://www.gpsvisualizer.com/#{gpsvisualizer_svg_path}"
-profile_file = File.join(input_directory, File.basename(input_directory) + '.svg')
+profile_file = File.join(directory_path, directory_name + '.svg')
 puts "Download GPS Visualizer profile image:\n    Method:\n        GET\n    URL:\n        #{gpsvisualizer_url}\n    Local file:\n        #{profile_file}" if options.verbose
-File.open(profile_file, 'w') {|f| f.write(RestClient.get(gpsvisualizer_url)) }run_command('Open profile file', "#{OS::OPEN_COMMAND} '#{profile_file}'", options.verbose) if options.open
+File.open(profile_file, 'w') { |f| f.write(RestClient.get(gpsvisualizer_url)) }
+run_command('Open profile file', "#{OS::OPEN_COMMAND} '#{profile_file}'", options.verbose) if options.open
