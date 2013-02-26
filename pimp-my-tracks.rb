@@ -48,7 +48,7 @@ option_parser = OptionParser.new do |opt|
         options.simplify = s
     end
 
-    opt.on('-o', '--[no-]open', 'Open the pimped file with default application') do |o|
+    opt.on('-o', '--[no-]open', 'Open the pimped file with default application (also open the profile if generated)') do |o|
         options.open = o
     end
 
@@ -166,4 +166,4 @@ abort "GPS Visualizer image not found on page '#{gpsvisualizer_url}'. May the si
 gpsvisualizer_url = "http://www.gpsvisualizer.com/#{gpsvisualizer_svg_path}"
 profile_file = File.join(input_directory, File.basename(input_directory) + '.svg')
 puts "Download GPS Visualizer profile image:\n    Method:\n        GET\n    URL:\n        #{gpsvisualizer_url}\n    Local file:\n        #{profile_file}" if options.verbose
-File.open(profile_file, 'w') {|f| f.write(RestClient.get(gpsvisualizer_url)) }
+File.open(profile_file, 'w') {|f| f.write(RestClient.get(gpsvisualizer_url)) }run_command('Open profile file', "#{OS::OPEN_COMMAND} '#{profile_file}'", options.verbose) if options.open
