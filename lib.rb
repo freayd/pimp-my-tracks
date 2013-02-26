@@ -38,8 +38,8 @@ def run_command(name, args, verbose)
         puts header
         puts err unless err.empty?
     end
-    
-    exit unless status.success?
+
+    abort unless status.success?
 end
 
 # Cross-platform way of finding an executable in the $PATH

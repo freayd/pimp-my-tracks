@@ -59,15 +59,9 @@ option_parser = OptionParser.new do |opt|
     end
 end
 option_parser.parse!
-if ARGV.length != 1
-    puts option_parser
-    exit
-end
+abort option_parser.to_s if ARGV.length != 1
 input_directory = ARGV[0]
-unless File.directory?(input_directory)
-    puts "'#{directory}' isn't a directory !"
-    exit
-end
+abort "'#{input_directory}' isn't a directory !" unless File.directory?(input_directory)
 
 ### Search GPSBabel command ###
 gpsbabel_command = which('gpsbabel')
@@ -79,10 +73,7 @@ if gpsbabel_command.nil?
     end
 end
 gpsbabel_command = nil unless not gpsbabel_command.nil? and File.executable?(gpsbabel_command)
-if gpsbabel_command.nil?
-    puts 'GPSBabel could not be found on your computer. May be you should install it and add the GPSBabel folder in the environment variable PATH?'
-    exit
-end
+abort 'GPSBabel could not be found on your computer. May be you should install it and add the GPSBabel folder in the environment variable PATH?' if gpsbabel_command.nil?
 gpsbabel_command = "'#{gpsbabel_command}'" if gpsbabel_command.match(/ /)
 
 ### Parameters ###
