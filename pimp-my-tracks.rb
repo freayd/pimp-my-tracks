@@ -145,6 +145,7 @@ gpsvisualizer_params.merge!(:format          => 'svg',
 #     3) If found, new download with more comprehensive elevation bounds (ex: [1600, 2500] instead of [1642, 2456]). Stop if not found.
 altitude_min = +1.0/0.0
 altitude_max = -1.0/0.0
+profile_file = nil
 2.times do |iteration|
 
     # GPS Visualizer - Send profile request
