@@ -143,8 +143,6 @@ gpsvisualizer_params.merge!(:format          => 'svg',
 #     1) First download
 #     2) Search min and max altitudes of the profile
 #     3) If found, new download with more comprehensive elevation bounds (ex: [1600, 2500] instead of [1642, 2456]). Stop if not found.
-altitude_min = +1.0/0.0
-altitude_max = -1.0/0.0
 profile_file = nil
 2.times do |iteration|
 
@@ -173,6 +171,8 @@ profile_file = nil
     if iteration == 0
 
         svg_content = Nokogiri::XML(File.open(profile_file).read)
+        altitude_min = +1.0/0.0
+        altitude_max = -1.0/0.0
         (svg_content.css('g[id="altitude y gridlines"] text') || []).each do |text|
             m = text.content.match(/^\s*(\d+[\.,]?\d*)\s*m\s*$/)
             next if m.nil?
@@ -186,7 +186,7 @@ profile_file = nil
                       '1. Minimum' => altitude_min.nil? ? 'not found' : "#{altitude_min.to_i} m",
                       '2. Maximum'  => altitude_max.nil? ? 'not found' : "#{altitude_max.to_i} m")
 
-        break if altitude_min.nil? and altitude_max.nil?
+        break unless (not altitude_min.nil? and altitude_min % 100 > 0) or (not altitude_max.nil? and altitude_max % 100 > 0)
 
         gpsvisualizer_params.merge!(:profile_y_min => altitude_min.nil? ? '' : ((altitude_min / 100    ).to_i * 100).to_s,
                                     :profile_y_max => altitude_max.nil? ? '' : ((altitude_max / 100 + 1).to_i * 100).to_s,
