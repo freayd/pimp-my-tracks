@@ -11,6 +11,7 @@ Features
 * Merge multiple tracks
 * Connect segment
 * Simplify tracks by removing unnecessary points
+* Draw elevation profile
 
 Requirements
 ============
