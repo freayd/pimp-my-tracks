@@ -23,12 +23,13 @@ require 'ostruct'
 require 'rest-client'
 
 # Parse parameters
-PimpMyTracks.options = options = OpenStruct.new(:connect      => true,
-                         :remove_close => true,
-                         :simplify     => true,
-                         :open         => false,
-                         :profile      => false,
-                         :verbose      => false)
+PimpMyTracks.options = options = OpenStruct.new(
+    :connect      => true,
+    :remove_close => true,
+    :simplify     => true,
+    :open         => false,
+    :profile      => false,
+    :verbose      => false)
 option_parser = OptionParser.new do |opt|
     opt.banner = "Usage: ruby #{__FILE__} [options] directory"
     opt.separator 'Directory'
