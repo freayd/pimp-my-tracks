@@ -88,9 +88,10 @@ gpsbabel_command = "'#{gpsbabel_command}'" if gpsbabel_command.match(/ /)
 # GPSBabel Arguments - Input files
 # TODO Add --format and --list-formats option (fetch formats (name, extension) from "gpsbabel -h")
 gpsbabel_args = [ gpsbabel_command ]
-Dir.glob(File.join(directory_path, '*.{gpx,kml}')).sort.each do |filepath|
-    filetype = File.extname(filepath).gsub(/^\./, '')
-    gpsbabel_args << "-i '#{filetype}' -f '#{filepath}'" unless filepath == kml_file
+Dir.glob(File.join(directory_path, '*.{gpx,kml}')).sort.each do |file_path|
+    next if file_path == kml_file
+    file_type = File.extname(file_path).gsub(/^\./, '')
+    gpsbabel_args << "-i '#{file_type}' -f '#{file_path}'"
 end
 gpsbabel_args << '-x track,pack'
 
